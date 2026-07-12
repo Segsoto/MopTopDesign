@@ -2,7 +2,31 @@ const root = document.documentElement;
 const toggle = document.querySelector('[data-theme-toggle]');
 const navToggle = document.querySelector('[data-nav-toggle]');
 const mainNav = document.querySelector('.main-nav');
+const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+const themeStorageKey = 'par5-theme';
 let currentTheme = 'light';
+
+function getStoredTheme() {
+  try {
+    const storedTheme = window.localStorage.getItem(themeStorageKey);
+    return storedTheme === 'dark' || storedTheme === 'light' ? storedTheme : 'light';
+  } catch {
+    return 'light';
+  }
+}
+
+function storeTheme(theme) {
+  try {
+    window.localStorage.setItem(themeStorageKey, theme);
+  } catch {
+    // Ignore storage failures so the site still works in restricted contexts.
+  }
+}
+
+function updateThemeColor(theme) {
+  if (!themeColorMeta) return;
+  themeColorMeta.setAttribute('content', theme === 'dark' ? '#0f1612' : '#1B3B2B');
+}
 
 function renderThemeIcon(theme) {
   if (!toggle) return;
@@ -15,11 +39,12 @@ function renderThemeIcon(theme) {
 function applyTheme(theme) {
   currentTheme = theme;
   root.setAttribute('data-theme', theme);
+  storeTheme(theme);
+  updateThemeColor(theme);
   renderThemeIcon(theme);
 }
 
-// The site always starts in light mode regardless of system preference.
-applyTheme('light');
+applyTheme(getStoredTheme());
 
 toggle?.addEventListener('click', () => {
   applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
