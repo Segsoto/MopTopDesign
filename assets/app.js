@@ -1,82 +1,72 @@
-const root = document.documentElement;
-const toggle = document.querySelector('[data-theme-toggle]');
-const navToggle = document.querySelector('[data-nav-toggle]');
-const mainNav = document.querySelector('.main-nav');
-const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-const themeStorageKey = 'par5-theme';
-let currentTheme = 'light';
+// app.js inspirado en referencia
+(function () {
+  const root = document.documentElement;
+  const navToggle = document.querySelector('[data-nav-toggle]');
+  const nav = document.querySelector('.main-nav');
+  const themeToggle = document.querySelector('[data-theme-toggle]');
+  const themeStorageKey = 'mop-top-theme';
 
-function getStoredTheme() {
-  try {
-    const storedTheme = window.localStorage.getItem(themeStorageKey);
-    return storedTheme === 'dark' || storedTheme === 'light' ? storedTheme : 'light';
-  } catch {
-    return 'light';
+  const getStoredTheme = () => {
+    try {
+      return localStorage.getItem(themeStorageKey);
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const setStoredTheme = (theme) => {
+    try {
+      localStorage.setItem(themeStorageKey, theme);
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const renderThemeIcon = (theme) => {
+    if (!themeToggle) {
+      return;
+    }
+
+    themeToggle.innerHTML = theme === 'dark'
+      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4.5"></circle><path d="M12 2v2.2M12 19.8V22M4.93 4.93l1.56 1.56M17.5 17.5l1.57 1.57M2 12h2.2M19.8 12H22M4.93 19.07l1.56-1.56M17.5 6.5l1.57-1.57"></path></svg>'
+      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path></svg>';
+  };
+
+  const applyTheme = (theme) => {
+    root.setAttribute('data-theme', theme);
+    setStoredTheme(theme);
+    renderThemeIcon(theme);
+  };
+
+  const storedTheme = getStoredTheme();
+  const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  const initialTheme = storedTheme === 'dark' || storedTheme === 'light' ? storedTheme : systemTheme;
+
+  applyTheme(initialTheme);
+
+  if (navToggle && nav) {
+    navToggle.addEventListener('click', () => {
+      const isOpen = nav.classList.toggle('is-open');
+      navToggle.setAttribute('aria-expanded', String(isOpen));
+      document.body.classList.toggle('nav-open', isOpen);
+    });
+
+    nav.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => {
+        nav.classList.remove('is-open');
+        navToggle.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('nav-open');
+      });
+    });
   }
-}
 
-function storeTheme(theme) {
-  try {
-    window.localStorage.setItem(themeStorageKey, theme);
-  } catch {
-    // Ignore storage failures so the site still works in restricted contexts.
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const nextTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      applyTheme(nextTheme);
+    });
   }
-}
 
-function updateThemeColor(theme) {
-  if (!themeColorMeta) return;
-  themeColorMeta.setAttribute('content', theme === 'dark' ? '#0f1612' : '#1B3B2B');
-}
-
-function renderThemeIcon(theme) {
-  if (!toggle) return;
-  toggle.innerHTML = theme === 'dark'
-    ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
-    : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.2M12 19.8V22M4.93 4.93l1.56 1.56M17.51 17.51l1.56 1.56M2 12h2.2M19.8 12H22M4.93 19.07l1.56-1.56M17.51 6.49l1.56-1.56"/></svg>';
-  toggle.setAttribute('aria-label', theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
-}
-
-function applyTheme(theme) {
-  currentTheme = theme;
-  root.setAttribute('data-theme', theme);
-  storeTheme(theme);
-  updateThemeColor(theme);
-  renderThemeIcon(theme);
-}
-
-applyTheme(getStoredTheme());
-
-toggle?.addEventListener('click', () => {
-  applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
-});
-
-function setMenuState(isOpen) {
-  if (!navToggle || !mainNav) return;
-  mainNav.classList.toggle('is-open', isOpen);
-  document.body.classList.toggle('nav-open', isOpen);
-  navToggle.setAttribute('aria-expanded', String(isOpen));
-  navToggle.setAttribute('aria-label', isOpen ? 'Cerrar menu' : 'Abrir menu');
-}
-
-navToggle?.addEventListener('click', () => {
-  const isOpen = mainNav?.classList.contains('is-open');
-  setMenuState(!isOpen);
-});
-
-mainNav?.querySelectorAll('a').forEach((link) => {
-  link.addEventListener('click', () => setMenuState(false));
-});
-
-window.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') setMenuState(false);
-});
-
-window.addEventListener('resize', () => {
-  if (window.innerWidth >= 720) setMenuState(false);
-});
-
-const revealItems = document.querySelectorAll('.reveal');
-if ('IntersectionObserver' in window) {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
@@ -84,9 +74,7 @@ if ('IntersectionObserver' in window) {
         observer.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.16, rootMargin: '0px 0px -10% 0px' });
+  }, { threshold: 0.2 });
 
-  revealItems.forEach((item) => observer.observe(item));
-} else {
-  revealItems.forEach((item) => item.classList.add('is-visible'));
-}
+  document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+})();
